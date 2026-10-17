@@ -80,4 +80,18 @@ describe("handleNewsletterSubscribe", () => {
     expect(response.status).toBe(502);
     expect(await response.json()).toEqual({ error: "upstream_error" });
   });
+
+  it("rejects malformed JSON", async () => {
+    const response = await handleNewsletterSubscribe(
+      new Request("http://localhost/api/newsletter", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: "{",
+      }),
+      { env: { RESEND_API_KEY: "test-key" } },
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "invalid_request" });
+  });
 });
