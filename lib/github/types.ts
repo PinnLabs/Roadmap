@@ -42,7 +42,16 @@ export interface GitHubCommit {
   readonly committedAt: string | null;
 }
 
+export interface GitHubOrganization {
+  readonly login: string;
+  readonly name: string | null;
+  readonly url: string;
+  readonly avatarUrl: string | null;
+  readonly followers: number;
+}
+
 export interface GitHubClient {
+  getOrganization(login: string): Promise<GitHubOrganization>;
   getRepository(slug: RepositorySlug): Promise<GitHubRepository>;
   countOpenIssues(slug: RepositorySlug): Promise<number>;
   countOpenPullRequests(slug: RepositorySlug): Promise<number>;

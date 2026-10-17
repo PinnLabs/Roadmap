@@ -5,6 +5,7 @@ import type {
   GitHubClient,
   GitHubClientOptions,
   GitHubCommit,
+  GitHubOrganization,
   GitHubRelease,
   GitHubRepository,
 } from "./types";
@@ -47,6 +48,14 @@ interface RawCommit {
   html_url?: unknown;
   author?: { login?: unknown } | null;
   commit?: { message?: unknown; committer?: { date?: unknown } | null } | null;
+}
+
+interface RawOrganization {
+  login?: unknown;
+  name?: unknown;
+  html_url?: unknown;
+  avatar_url?: unknown;
+  followers?: unknown;
 }
 
 interface RawSearchResult {
@@ -277,6 +286,20 @@ export function createGitHubClient(
   }
 
   return {
+    async getOrganization(login) {
+      const raw = await request<RawOrganization>(
+        `/orgs/${encodeURIComponent(login)}`,
+      );
+
+      return {
+        login: text(raw.login),
+        name: nullableText(raw.name),
+        url: text(raw.html_url),
+        avatarUrl: nullableText(raw.avatar_url),
+        followers: count(raw.followers),
+      } satisfies GitHubOrganization;
+    },
+
     async getRepository(slug) {
       const raw = await request<RawRepository>(repositoryPath(slug));
 

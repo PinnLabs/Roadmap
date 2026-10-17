@@ -41,6 +41,7 @@ tokens, or endpoints is committed to this (public) repository.
 | `GITHUB_TRACKED_REPOS`   | no       | _empty_                 | Comma-separated allowlist of `owner/name`. This is the security boundary — see below.         |
 | `GITHUB_API_BASE_URL`    | no       | `https://api.github.com` | API root. Set for GitHub Enterprise, e.g. `https://ghe.example.com/api/v3`.                    |
 | `GITHUB_INCLUDE_PRIVATE` | no       | `false`                 | Whether private repositories may be exposed through this public API.                           |
+| `GITHUB_ORGANIZATION`    | no       | owner of first tracked repo | Organization whose GitHub follower count is shown in the header (cached for 1 hour).  |
 
 A misconfigured value fails loudly (`500 server_misconfigured`) rather than
 silently shrinking the roadmap. Invalid entries are never echoed back.

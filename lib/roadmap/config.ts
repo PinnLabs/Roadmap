@@ -21,6 +21,8 @@ export interface RoadmapConfig {
   readonly trackedRepositories: readonly RepositorySlug[];
   /** Whether private repositories may be exposed through the public API. */
   readonly includePrivateRepositories: boolean;
+  /** GitHub organization shown in the header, or `null` when none is known. */
+  readonly organization: string | null;
 }
 
 const TRUE_VALUES = new Set(["true", "1", "yes", "on"]);
@@ -127,14 +129,41 @@ export function parseApiBaseUrl(value: string | undefined | null): string | null
   return url.href;
 }
 
+const ORGANIZATION_PATTERN = /^[a-z\d](?:[a-z\d]|-(?=[a-z\d])){0,38}$/i;
+
+/**
+ * Resolves the organization whose profile is shown in the header. Falls back to
+ * the owner of the first tracked repository, so a single-org deployment needs no
+ * extra configuration.
+ */
+export function parseOrganization(
+  value: string | undefined | null,
+  trackedRepositories: readonly RepositorySlug[],
+): string | null {
+  const trimmed = typeof value === "string" ? value.trim() : "";
+
+  if (trimmed === "") {
+    return trackedRepositories[0]?.owner ?? null;
+  }
+
+  if (!ORGANIZATION_PATTERN.test(trimmed)) {
+    throw new ConfigurationError("GITHUB_ORGANIZATION is not a valid login");
+  }
+
+  return trimmed;
+}
+
 /** Loads and validates the roadmap configuration from the environment. */
 export function loadRoadmapConfig(
   env: Record<string, string | undefined> = process.env,
 ): RoadmapConfig {
+  const trackedRepositories = parseTrackedRepositories(env.GITHUB_TRACKED_REPOS);
+
   return {
     token: normalizeToken(env.GITHUB_TOKEN),
     apiBaseUrl: parseApiBaseUrl(env.GITHUB_API_BASE_URL),
-    trackedRepositories: parseTrackedRepositories(env.GITHUB_TRACKED_REPOS),
+    trackedRepositories,
     includePrivateRepositories: parseBoolean(env.GITHUB_INCLUDE_PRIVATE),
+    organization: parseOrganization(env.GITHUB_ORGANIZATION, trackedRepositories),
   };
 }

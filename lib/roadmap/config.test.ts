@@ -5,6 +5,7 @@ import {
   loadRoadmapConfig,
   parseApiBaseUrl,
   parseBoolean,
+  parseOrganization,
   parseTrackedRepositories,
 } from "./config";
 
@@ -122,6 +123,30 @@ describe("parseApiBaseUrl", () => {
   });
 });
 
+describe("parseOrganization", () => {
+  const tracked = [{ owner: "PinnLabs", name: "roadmap" }];
+
+  it("uses an explicit organization", () => {
+    expect(parseOrganization("  Acme-Org ", tracked)).toBe("Acme-Org");
+  });
+
+  it("falls back to the owner of the first tracked repository", () => {
+    expect(parseOrganization(undefined, tracked)).toBe("PinnLabs");
+    expect(parseOrganization("   ", tracked)).toBe("PinnLabs");
+  });
+
+  it("is null when nothing identifies an organization", () => {
+    expect(parseOrganization(undefined, [])).toBeNull();
+  });
+
+  it.each(["-leading", "trailing-", "double--dash", "has/slash", "a".repeat(40)])(
+    "rejects %s",
+    (value) => {
+      expect(() => parseOrganization(value, tracked)).toThrow(ConfigurationError);
+    },
+  );
+});
+
 describe("loadRoadmapConfig", () => {
   it("defaults to no token, no repositories, and private repositories hidden", () => {
     expect(loadRoadmapConfig({})).toEqual({
@@ -129,6 +154,7 @@ describe("loadRoadmapConfig", () => {
       apiBaseUrl: null,
       trackedRepositories: [],
       includePrivateRepositories: false,
+      organization: null,
     });
   });
 
@@ -145,6 +171,7 @@ describe("loadRoadmapConfig", () => {
       apiBaseUrl: "https://ghe.example.com/api/v3",
       trackedRepositories: [{ owner: "PinnLabs", name: "roadmap" }],
       includePrivateRepositories: true,
+      organization: "PinnLabs",
     });
   });
 

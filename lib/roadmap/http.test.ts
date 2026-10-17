@@ -23,6 +23,7 @@ function configWith(
       (repository) => parseRepositorySlug(repository)!,
     ),
     includePrivateRepositories,
+    organization: null,
   };
 }
 
@@ -51,6 +52,13 @@ function githubRepo(
 
 function fakeClient(overrides: Partial<GitHubClient> = {}): GitHubClient {
   return {
+    getOrganization: async (login) => ({
+      login,
+      name: null,
+      url: `https://github.com/${login}`,
+      avatarUrl: null,
+      followers: 0,
+    }),
     getRepository: async (slug) => githubRepo(slug.name),
     countOpenIssues: async () => 0,
     countOpenPullRequests: async () => 0,

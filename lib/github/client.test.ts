@@ -128,6 +128,42 @@ describe("createGitHubClient request handling", () => {
   });
 });
 
+describe("getOrganization", () => {
+  it("requests the organization and maps its follower count", async () => {
+    const { calls, fetchImpl } = recordingFetch(() =>
+      jsonResponse({
+        login: "PinnLabs",
+        id: 7,
+        name: "PinnLabs",
+        html_url: "https://github.com/PinnLabs",
+        avatar_url: "https://avatars.githubusercontent.com/u/7",
+        followers: 12400,
+      }),
+    );
+
+    await expect(
+      createGitHubClient({ fetch: fetchImpl }).getOrganization("PinnLabs"),
+    ).resolves.toEqual({
+      login: "PinnLabs",
+      name: "PinnLabs",
+      url: "https://github.com/PinnLabs",
+      avatarUrl: "https://avatars.githubusercontent.com/u/7",
+      followers: 12400,
+    });
+    expect(calls[0].url).toBe("https://api.github.com/orgs/PinnLabs");
+  });
+
+  it("falls back to zero followers when the count is missing", async () => {
+    const { fetchImpl } = recordingFetch(() => jsonResponse({ login: "PinnLabs" }));
+
+    const organization = await createGitHubClient({ fetch: fetchImpl }).getOrganization(
+      "PinnLabs",
+    );
+
+    expect(organization.followers).toBe(0);
+  });
+});
+
 describe("getRepository", () => {
   it("maps the payload onto a minimal DTO", async () => {
     const { fetchImpl } = recordingFetch(() => jsonResponse(rawRepository));

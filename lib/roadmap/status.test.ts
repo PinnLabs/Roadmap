@@ -45,6 +45,13 @@ const commit: GitHubCommit = {
 
 function fakeClient(overrides: Partial<GitHubClient> = {}): GitHubClient {
   return {
+    getOrganization: async (login) => ({
+      login,
+      name: null,
+      url: `https://github.com/${login}`,
+      avatarUrl: null,
+      followers: 0,
+    }),
     getRepository: async () => repository,
     countOpenIssues: async () => 5,
     countOpenPullRequests: async () => 2,
