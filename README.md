@@ -34,6 +34,7 @@ work happens on GitHub.
   view can be shared as a link.
 - **Organization header.** Shows the GitHub organization's follower count, with
   search and navigation. Mobile first.
+- **Email updates.** Visitors can subscribe to roadmap updates through Resend.
 - **Sync status footer.** Shows whether the GitHub sync is healthy and when it
   last ran.
 - **JSON API.** `GET /api/projects` exposes the same status snapshots for other
