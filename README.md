@@ -1,11 +1,11 @@
-<p align="center">
-  <img src="public/images/icon-512.png" alt="PinnLabs logo" width="120" height="120" />
-</p>
-
 <h1 align="center">PinnLabs Roadmap</h1>
 
 <p align="center">
   A public transparency portal for PinnLabs projects, built live from GitHub.
+</p>
+
+<p align="center">
+  <img src="docs/images/screenshot.png" alt="PinnLabs Roadmap home page: header, project explorer with repository status, and the roadmap board" width="900" />
 </p>
 
 <p align="center">
