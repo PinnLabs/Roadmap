@@ -119,4 +119,16 @@ describe("handleNewsletterSubscribe", () => {
     expect(response.status).toBe(502);
     expect(await response.json()).toEqual({ error: "upstream_unavailable" });
   });
+
+  it("requires consent to be explicitly true", async () => {
+    const fetcher = vi.fn<typeof fetch>();
+    const response = await handleNewsletterSubscribe(
+      createRequest({ email: "reader@example.com", consent: "true" }),
+      { env: { RESEND_API_KEY: "test-key" }, fetcher },
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "consent_required" });
+    expect(fetcher).not.toHaveBeenCalled();
+  });
 });
