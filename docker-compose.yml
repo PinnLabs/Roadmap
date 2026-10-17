@@ -16,9 +16,3 @@ services:
       GITHUB_ORGANIZATION: ${GITHUB_ORGANIZATION:-}
       GITHUB_API_BASE_URL: ${GITHUB_API_BASE_URL:-}
       GITHUB_INCLUDE_PRIVATE: ${GITHUB_INCLUDE_PRIVATE:-false}
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
-      interval: 30s
-      timeout: 5s
-      start_period: 20s
-      retries: 3
