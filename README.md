@@ -136,6 +136,7 @@ tokens, or endpoints is committed to this (public) repository.
 | `GITHUB_API_BASE_URL`    | no       | `https://api.github.com` | API root. Set for GitHub Enterprise, e.g. `https://ghe.example.com/api/v3`.                    |
 | `GITHUB_INCLUDE_PRIVATE` | no       | `false`                 | Whether private repositories may be exposed through this public API.                           |
 | `GITHUB_ORGANIZATION`    | no       | owner of first tracked repo | Organization whose GitHub follower count is shown in the header (cached for 1 hour).  |
+| `RESEND_API_KEY`         | yes for subscriptions | _none_ | Resend API key used server-side to add newsletter contacts. |
 
 A misconfigured value fails loudly (`500 server_misconfigured`) rather than
 silently shrinking the roadmap. Invalid entries are never echoed back.
@@ -196,6 +197,12 @@ request, so one broken repository never blanks the roadmap. `latestRelease` and
 
 Status for a single tracked repository, as `{ "project": { … } }`.
 
+### `POST /api/newsletter`
+
+Adds a consenting email address to the Resend contacts list. Requires
+`RESEND_API_KEY` and accepts `{ "email": "reader@example.com", "consent": true }`.
+Successful and already-existing contacts return `{ "ok": true }`.
+
 ### Error responses
 
 Error bodies are always `{ "error": "<code>" }`. Upstream messages, tokens and
@@ -224,6 +231,8 @@ app/
   page.tsx                    Home: hero + roadmap board
   icon.png, apple-icon.png    Favicons (Next.js file conventions)
   api/projects/route.ts       Thin adapter: opts out of prerendering, wires config + client
+  api/newsletter/route.ts     Newsletter signup adapter for Resend
+  subscribe/                  Email signup page and form
 
 components/
   site-header/                Header, mobile menu, ⌘K search, follower badge
@@ -234,6 +243,7 @@ components/
 
 lib/
   github/client.ts            GitHub REST client over fetch (no dependencies, injectable)
+  newsletter/http.ts          Validates and submits newsletter contacts to Resend
   roadmap/config.ts           Server-only, validated environment configuration
   roadmap/http.ts             Framework-free API request handler (authz, error mapping)
   roadmap/status.ts           Composes a ProjectStatus from several GitHub calls
