@@ -108,4 +108,15 @@ describe("handleNewsletterSubscribe", () => {
     expect(response.status).toBe(400);
     expect(await response.json()).toEqual({ error: "invalid_request" });
   });
+
+  it("maps Resend network failures to an upstream unavailable error", async () => {
+    const fetcher = vi.fn<typeof fetch>().mockRejectedValue(new Error("network down"));
+    const response = await handleNewsletterSubscribe(
+      createRequest({ email: "reader@example.com", consent: true }),
+      { env: { RESEND_API_KEY: "test-key" }, fetcher },
+    );
+
+    expect(response.status).toBe(502);
+    expect(await response.json()).toEqual({ error: "upstream_unavailable" });
+  });
 });
