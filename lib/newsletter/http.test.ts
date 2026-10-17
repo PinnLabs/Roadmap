@@ -94,4 +94,18 @@ describe("handleNewsletterSubscribe", () => {
     expect(response.status).toBe(400);
     expect(await response.json()).toEqual({ error: "invalid_request" });
   });
+
+  it("rejects non-object JSON payloads", async () => {
+    const response = await handleNewsletterSubscribe(
+      new Request("http://localhost/api/newsletter", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(["reader@example.com"]),
+      }),
+      { env: { RESEND_API_KEY: "test-key" } },
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "invalid_request" });
+  });
 });
