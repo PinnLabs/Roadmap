@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useId, useState, type ReactNode } from "react";
 
 import { CloseIcon, MenuIcon, RssIcon } from "./icons";
-import { NAV_LINKS, RSS_HREF } from "./nav-links";
+import { RSS_HREF } from "./nav-links";
 import { SearchField } from "./search-field";
 
 interface MobileMenuProps {
@@ -53,22 +53,6 @@ export function MobileMenu({ followers }: MobileMenuProps) {
       >
         <div className="mx-auto flex max-w-screen-2xl flex-col gap-4 px-4 py-4 sm:px-6">
           <SearchField id={`${panelId}-search`} className="md:hidden" />
-
-          <nav aria-label="Primary">
-            <ul className="flex flex-col">
-              {NAV_LINKS.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    onClick={close}
-                    className="block rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-primary/5 hover:text-primary"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
 
           <div className="flex flex-wrap items-center gap-2 border-t border-foreground/10 pt-4 sm:hidden">
             {followers}

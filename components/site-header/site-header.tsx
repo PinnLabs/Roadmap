@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { FollowersBadge, FollowersBadgeSkeleton } from "./followers-badge";
 import { BellIcon, RssIcon } from "./icons";
 import { MobileMenu } from "./mobile-menu";
-import { NAV_LINKS, RSS_HREF, SUBSCRIBE_HREF } from "./nav-links";
+import { RSS_HREF, SUBSCRIBE_HREF } from "./nav-links";
 import { SearchField } from "./search-field";
 
 function Followers() {
@@ -36,21 +36,6 @@ export function SiteHeader() {
             PinnLabs<span className="text-secondary dark:text-foreground/70">Roadmap</span>
           </span>
         </Link>
-
-        <nav aria-label="Primary" className="hidden flex-1 xl:block">
-          <ul className="flex items-center gap-1">
-            {NAV_LINKS.map((link) => (
-              <li key={link.href}>
-                <Link
-                  href={link.href}
-                  className="block max-w-32 rounded-lg px-3 py-1.5 text-sm font-medium leading-tight text-foreground/80 transition-colors hover:bg-primary/5 hover:text-primary 2xl:max-w-none"
-                >
-                  {link.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
 
         <div className="ml-auto flex items-center gap-2">
           <SearchField id="site-search" shortcut className="hidden w-48 md:block lg:w-56" />
