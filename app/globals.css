@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* `dark:` utilities only apply under an explicit `.dark` class, never from the OS setting. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --palette-primary: #162042;
   --palette-secondary: #2c385a;
@@ -18,11 +21,9 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Light-only: keep native controls (selects, scrollbars) light as well. */
+:root {
+  color-scheme: light;
 }
 
 body {
