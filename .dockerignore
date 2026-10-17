@@ -1,0 +1,21 @@
+# Build output and dependencies are recreated inside the image
+node_modules
+.next
+out
+coverage
+
+# Never send local secrets to the build context
+.env*
+!.env.example
+
+# Not needed at build or runtime
+.git
+.github
+docs
+graphify-out
+*.md
+Dockerfile
+docker-compose*.yml
+.dockerignore
+.DS_Store
+npm-debug.log*

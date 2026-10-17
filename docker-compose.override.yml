@@ -1,0 +1,9 @@
+# Local-only overrides. `docker compose up` loads this file automatically;
+# Coolify deploys docker-compose.yml alone, so this never reaches production.
+services:
+  roadmap:
+    ports:
+      - "3000:3000"
+    env_file:
+      - path: .env.local
+        required: false
