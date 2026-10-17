@@ -1,19 +1,112 @@
-# Roadmap
+<p align="center">
+  <img src="public/images/icon-512.png" alt="PinnLabs logo" width="120" height="120" />
+</p>
 
-A public roadmap that tracks the status of PinnLabs projects — open source or
-not — by reading from the GitHub API.
+<h1 align="center">PinnLabs Roadmap</h1>
 
-This repository currently contains the **communication API**: the server-side
-layer that talks to GitHub and turns a repository into a small, stable status
-snapshot. The UI comes later and will consume this API.
+<p align="center">
+  A public transparency portal for PinnLabs projects, built live from GitHub.
+</p>
+
+<p align="center">
+  <a href="#getting-started">Getting started</a> ·
+  <a href="#how-it-works">How it works</a> ·
+  <a href="#configuration">Configuration</a> ·
+  <a href="#api">API</a>
+</p>
+
+---
+
+PinnLabs Roadmap shows what our maintainers are researching, building and
+shipping across our repositories, with no hidden backlog. Nothing is entered by
+hand: every number, card and status comes from public GitHub data (issues, pull
+requests, releases and commits), so the roadmap stays accurate as long as the
+work happens on GitHub.
+
+## Features
+
+- **Roadmap board.** A Kanban of issues and pull requests, grouped into
+  *Backlog → In progress → In review → Shipped* and inferred from GitHub
+  activity.
+- **Project explorer.** Filter by project (all projects by default), search
+  repositories, releases and commits, and see totals for open issues, open pull
+  requests, stars and forks. The filter and search are stored in the URL, so a
+  view can be shared as a link.
+- **Organization header.** Shows the GitHub organization's follower count, with
+  search and navigation. Mobile first.
+- **Sync status footer.** Shows whether the GitHub sync is healthy and when it
+  last ran.
+- **JSON API.** `GET /api/projects` exposes the same status snapshots for other
+  tools to use.
+
+## How it works
+
+```
+               ┌──────────────────────────────┐
+  GitHub REST  │ lib/github/client.ts         │  typed, dependency-free client
+  API  ───────▶│  repos · issues · releases   │  (timeouts, error mapping,
+               │  commits · search · orgs     │   token redaction)
+               └──────────────┬───────────────┘
+                              │
+               ┌──────────────▼───────────────┐
+               │ lib/roadmap/*                │  domain layer: allowlist, status
+               │  status · board · filters    │  snapshots, stage inference,
+               │  sync status · config        │  filtering (pure, unit-tested)
+               └───────┬──────────────┬───────┘
+                       │              │
+        "use cache" loaders      Route Handler
+        (minutes / hours)        app/api/projects
+                       │              │
+               ┌───────▼──────┐   ┌───▼──────────┐
+               │ Server pages │   │ JSON API     │
+               │ header, hero,│   │ (no-store)   │
+               │ board, footer│   └──────────────┘
+               └──────────────┘
+```
+
+1. **Allowlist.** Only the repositories listed in `GITHUB_TRACKED_REPOS` are
+   ever read. The public pages show **public** repositories only.
+2. **Fetch.** The GitHub client issues independent requests concurrently, so
+   one repository's snapshot is one round trip.
+3. **Cache.** Page data is wrapped in Next.js Cache Components (`"use cache"`):
+   project status and the board refresh every minute and follower counts every
+   hour. Visitors are served from the cache, so they never spend the GitHub
+   rate limit.
+4. **Derive.** Pure functions turn raw issues into board stages and priorities,
+   and project statuses into totals and sync health.
+5. **Render.** Server Components stream each section inside `<Suspense>`. A
+   repository that fails is skipped instead of blanking the page.
+
+### How issues map to the board
+
+| GitHub state                                             | Column      |
+| -------------------------------------------------------- | ----------- |
+| Open issue, no assignee                                  | Backlog     |
+| Open issue with an assignee, or an `in progress`/`wip` label | In progress |
+| Open pull request                                        | In review   |
+| Closed issue or merged PR, in the last 30 days           | Shipped     |
+
+Closed pull requests that were never merged are left off the board.
+
+Priority is read from labels: `critical`/`urgent`/`p0` → Urgent,
+`high`/`p1` → High, `medium`/`normal`/`p2` → Normal, `low`/`p3` → Low.
+Cards are sorted by priority first, then by most recently updated. When an
+issue belongs to a milestone, its card shows the milestone, its due date and
+its progress (closed issues ÷ total).
+
+The board is **read-only**: to move a card, change the issue on GitHub. The
+`KanbanBoard` component in `components/ui` also supports drag and drop
+(pointer and keyboard) for boards that are not driven by GitHub.
 
 ## Stack
 
-- [Next.js](https://nextjs.org) 16 (App Router, Cache Components) with Route Handlers
-- TypeScript
+- [Next.js](https://nextjs.org) 16 (App Router, Cache Components, Route Handlers)
+- React 19 and TypeScript
+- [Tailwind CSS](https://tailwindcss.com) 4, using the global palette tokens in
+  `app/globals.css` (`primary`, `secondary`, `neutral`)
+- [Framer Motion](https://motion.dev) and [Lucide](https://lucide.dev) for the board
 - [Vitest](https://vitest.dev) for unit tests
-- No runtime dependencies beyond Next.js/React — the GitHub client is built on the
-  global `fetch`
+- The GitHub client has no dependencies. It uses the global `fetch`.
 
 ## Getting started
 
@@ -121,36 +214,50 @@ stack traces are never returned.
 
 ## Architecture
 
-Responsibilities are separated so the GitHub integration can be tested without a
-network, a Next.js runtime, or a database.
+Responsibilities are separated so the GitHub integration and the roadmap logic
+can be tested without a network, a Next.js runtime or a browser.
 
 ```
-app/api/projects/route.ts   Thin adapter: opts out of prerendering, wires config + client
-lib/roadmap/http.ts         Framework-free request handler (routing, authz, error mapping)
-lib/roadmap/status.ts       Data access layer: composes a ProjectStatus from several calls
-lib/roadmap/config.ts       Server-only, validated environment configuration
-lib/roadmap/types.ts        The public, stable response contract
-lib/github/client.ts        GitHub REST client over fetch (no dependencies, injectable)
-lib/repository-slug.ts      Strict owner/name parsing and allowlist matching
+app/
+  layout.tsx                  Site shell: header, page, footer
+  page.tsx                    Home: hero + roadmap board
+  icon.png, apple-icon.png    Favicons (Next.js file conventions)
+  api/projects/route.ts       Thin adapter: opts out of prerendering, wires config + client
+
+components/
+  site-header/                Header, mobile menu, ⌘K search, follower badge
+  roadmap-hero/               Hero, actions, project filter + search explorer
+  roadmap-board/              Maps roadmap items onto the Kanban board
+  site-footer/                Sync status, links, copyright
+  ui/kanban-board.tsx         Generic, accessible Kanban component (shadcn-style)
+
+lib/
+  github/client.ts            GitHub REST client over fetch (no dependencies, injectable)
+  roadmap/config.ts           Server-only, validated environment configuration
+  roadmap/http.ts             Framework-free API request handler (authz, error mapping)
+  roadmap/status.ts           Composes a ProjectStatus from several GitHub calls
+  roadmap/board.ts            Stage and priority inference, grouping, filtering
+  roadmap/project-filter.ts   Project selection, search and totals
+  roadmap/sync-status.ts      Sync health for the footer
+  roadmap/public-*.ts         Cached ("use cache") loaders used by the pages
+  roadmap/organization.ts     Cached organization follower count
+  repository-slug.ts          Strict owner/name parsing and allowlist matching
 ```
 
-The layering only points one way: `route → http → status → github client`. The
-GitHub client is a pure function of its options and never reads the environment;
-`config.ts` and `status.ts` are marked `server-only`, so the build fails if they
-are ever imported into a Client Component.
-
-All I/O is asynchronous and independent calls are issued concurrently — a status
-snapshot costs one round trip, not five.
+Dependencies only point one way: `pages/route → loaders/http → domain →
+github client`. The GitHub client takes everything as options and never reads
+the environment. Loaders and config are marked `server-only`, so the build fails
+if they are imported into a Client Component.
 
 ## Testing
 
-This API was built test-first. Tests inject a fake `fetch` and a fake GitHub
+The domain and API layers were built test-first. Tests inject a fake `fetch` and a fake GitHub
 client, so the suite is fast, deterministic, and never touches the network.
 
 ```bash
 npm test           # single run
 npm run test:watch # watch mode
-npm run typecheck  # tsc --noEmit
+npm run typecheck  # next typegen && tsc --noEmit
 npm run lint       # eslint
 npm run build      # production build
 ```
@@ -165,8 +272,9 @@ Because this repository is public and the API is publicly reachable:
   `owner/name` slug and must match `GITHUB_TRACKED_REPOS`; anything else returns
   `404`, so the endpoint cannot be used to probe arbitrary repositories. An empty
   allowlist tracks nothing.
-- **Private repositories are hidden by default** and only exposed when
-  `GITHUB_INCLUDE_PRIVATE=true`. Unknown visibility metadata fails safe to private.
+- **Private repositories are hidden by default.** The API only exposes them when
+  `GITHUB_INCLUDE_PRIVATE=true`, and the public pages never show them.
+  When visibility metadata is unknown, the repository is treated as private.
 - **Tokens never leak.** Error messages, responses, and logs are built from
   coarse, stable codes; any token appearing in an upstream message is redacted.
 - **Defensive defaults.** Requests carry a timeout, responses are
@@ -187,6 +295,9 @@ shipped API.
 ## Roadmap
 
 - [x] GitHub communication API with tests
-- [ ] Caching layer to protect the GitHub rate limit
-- [ ] UI that renders the roadmap
-- [ ] Milestones, issues grouped by label, and progress metrics
+- [x] Caching layer to protect the GitHub rate limit
+- [x] Header, hero with project explorer, and footer
+- [x] Kanban board driven by issues and pull requests
+- [ ] Releases & changelog, community wishlist and repository health pages
+- [ ] Search page, RSS feed and email subscriptions
+- [ ] Architecture RFCs
