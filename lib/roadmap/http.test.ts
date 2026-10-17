@@ -52,6 +52,7 @@ function githubRepo(
 
 function fakeClient(overrides: Partial<GitHubClient> = {}): GitHubClient {
   return {
+    listIssues: async () => [],
     getOrganization: async (login) => ({
       login,
       name: null,

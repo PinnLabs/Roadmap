@@ -5,6 +5,7 @@ import type {
   GitHubClient,
   GitHubClientOptions,
   GitHubCommit,
+  GitHubIssue,
   GitHubOrganization,
   GitHubRelease,
   GitHubRepository,
@@ -48,6 +49,83 @@ interface RawCommit {
   html_url?: unknown;
   author?: { login?: unknown } | null;
   commit?: { message?: unknown; committer?: { date?: unknown } | null } | null;
+}
+
+interface RawIssue {
+  number?: unknown;
+  title?: unknown;
+  html_url?: unknown;
+  state?: unknown;
+  labels?: unknown;
+  assignees?: unknown;
+  pull_request?: { merged_at?: unknown } | null;
+  milestone?: {
+    title?: unknown;
+    due_on?: unknown;
+    open_issues?: unknown;
+    closed_issues?: unknown;
+  } | null;
+  comments?: unknown;
+  updated_at?: unknown;
+  closed_at?: unknown;
+}
+
+const DEFAULT_ISSUE_LIMIT = 50;
+const MAX_ISSUE_LIMIT = 100;
+
+function labelNames(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((label: unknown) =>
+      typeof label === "string"
+        ? label
+        : typeof label === "object" && label !== null
+          ? text((label as { name?: unknown }).name)
+          : "",
+    )
+    .filter((name) => name !== "");
+}
+
+function assigneeList(value: unknown): GitHubIssue["assignees"] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter((user): user is { login?: unknown; avatar_url?: unknown } =>
+      typeof user === "object" && user !== null,
+    )
+    .map((user) => ({ login: text(user.login), avatarUrl: nullableText(user.avatar_url) }))
+    .filter((user) => user.login !== "");
+}
+
+function toIssue(raw: RawIssue): GitHubIssue {
+  const milestone = raw.milestone;
+
+  return {
+    number: count(raw.number),
+    title: text(raw.title),
+    url: text(raw.html_url),
+    state: raw.state === "closed" ? "closed" : "open",
+    isPullRequest: typeof raw.pull_request === "object" && raw.pull_request !== null,
+    mergedAt: nullableText(raw.pull_request?.merged_at),
+    labels: labelNames(raw.labels),
+    assignees: assigneeList(raw.assignees),
+    milestone: milestone
+      ? {
+          title: text(milestone.title),
+          dueOn: nullableText(milestone.due_on),
+          openIssues: count(milestone.open_issues),
+          closedIssues: count(milestone.closed_issues),
+        }
+      : null,
+    comments: count(raw.comments),
+    updatedAt: nullableText(raw.updated_at),
+    closedAt: nullableText(raw.closed_at),
+  };
 }
 
 interface RawOrganization {
@@ -298,6 +376,15 @@ export function createGitHubClient(
         avatarUrl: nullableText(raw.avatar_url),
         followers: count(raw.followers),
       } satisfies GitHubOrganization;
+    },
+
+    async listIssues(slug, limit = DEFAULT_ISSUE_LIMIT) {
+      const perPage = Math.min(Math.max(Math.trunc(limit), 1), MAX_ISSUE_LIMIT);
+      const raw = await request<RawIssue[]>(
+        `${repositoryPath(slug)}/issues?state=all&sort=updated&direction=desc&per_page=${perPage}`,
+      );
+
+      return Array.isArray(raw) ? raw.map(toIssue) : [];
     },
 
     async getRepository(slug) {

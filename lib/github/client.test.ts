@@ -128,6 +128,62 @@ describe("createGitHubClient request handling", () => {
   });
 });
 
+describe("listIssues", () => {
+  it("requests recent issues and maps issues and pull requests", async () => {
+    const { calls, fetchImpl } = recordingFetch(() =>
+      jsonResponse([
+        {
+          number: 7,
+          title: "Kanban view",
+          html_url: "https://github.com/PinnLabs/roadmap/issues/7",
+          state: "open",
+          labels: [{ name: "priority: high" }, "enhancement"],
+          assignees: [{ login: "felipe", avatar_url: "https://avatars/1" }, { id: 2 }],
+          milestone: { title: "v1", due_on: "2026-11-01T00:00:00Z", open_issues: 1, closed_issues: 3 },
+          comments: 2,
+          updated_at: "2026-10-01T00:00:00Z",
+          closed_at: null,
+        },
+        {
+          number: 8,
+          title: "feat: board",
+          html_url: "https://github.com/PinnLabs/roadmap/pull/8",
+          state: "closed",
+          pull_request: { merged_at: "2026-10-02T00:00:00Z" },
+          closed_at: "2026-10-02T00:00:00Z",
+        },
+      ]),
+    );
+
+    const issues = await createGitHubClient({ fetch: fetchImpl }).listIssues(slug, 500);
+
+    expect(calls[0].url).toBe(
+      "https://api.github.com/repos/PinnLabs/roadmap/issues?state=all&sort=updated&direction=desc&per_page=100",
+    );
+    expect(issues[0]).toEqual({
+      number: 7,
+      title: "Kanban view",
+      url: "https://github.com/PinnLabs/roadmap/issues/7",
+      state: "open",
+      isPullRequest: false,
+      mergedAt: null,
+      labels: ["priority: high", "enhancement"],
+      assignees: [{ login: "felipe", avatarUrl: "https://avatars/1" }],
+      milestone: { title: "v1", dueOn: "2026-11-01T00:00:00Z", openIssues: 1, closedIssues: 3 },
+      comments: 2,
+      updatedAt: "2026-10-01T00:00:00Z",
+      closedAt: null,
+    });
+    expect(issues[1]).toMatchObject({
+      state: "closed",
+      isPullRequest: true,
+      mergedAt: "2026-10-02T00:00:00Z",
+      labels: [],
+      milestone: null,
+    });
+  });
+});
+
 describe("getOrganization", () => {
   it("requests the organization and maps its follower count", async () => {
     const { calls, fetchImpl } = recordingFetch(() =>
